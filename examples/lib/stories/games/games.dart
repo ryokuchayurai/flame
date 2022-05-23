@@ -11,8 +11,8 @@ void addGameStories(Dashbook dashbook) {
           color: Colors.black,
           margin: const EdgeInsets.all(45),
           child: ClipRect(
-            child: GameWidget(
-              game: TRexGame(),
+            child: GameWidget.controlled(
+              create: TRexGame.new,
               loadingBuilder: (_) => const Center(
                 child: Text('Loading'),
               ),
