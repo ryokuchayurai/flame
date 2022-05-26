@@ -1,9 +1,11 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:collection/collection.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/sprite.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tiled/tiled.dart';
 
 import 'flame_tsx_provider.dart';
@@ -135,7 +137,7 @@ class RenderableTiledMap {
     await Future.forEach(map.tiledImages(), (TiledImage img) async {
       final src = img.source;
       if (src != null) {
-        result[src] = await SpriteBatch.load(src);
+        result[src] = await SpriteBatch.load(src, useAtlas: !kIsWeb);
       }
     });
 
@@ -192,10 +194,14 @@ class RenderableTiledMap {
     });
   }
 
+  final Paint _paint = Paint()
+    ..isAntiAlias = false
+    ..filterQuality = FilterQuality.low;
+
   /// Render [batchesByLayer] that compose this tile map.
   void render(Canvas c) {
     batchesByLayer.forEach((batchMap) {
-      batchMap.forEach((_, batch) => batch.render(c));
+      batchMap.forEach((_, batch) => batch.render(c, paint: kIsWeb ? _paint: null));
     });
   }
 
