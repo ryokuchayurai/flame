@@ -90,7 +90,7 @@ class AudioPool {
         });
       }
 
-      subscription = player.onPlayerCompletion.listen((_) {
+      subscription = player.onPlayerComplete.listen((_) {
         if (repeating) {
           player.resume();
         } else {
@@ -105,8 +105,8 @@ class AudioPool {
   Future<AudioPlayer> _createNewAudioPlayer() async {
     final player = AudioPlayer();
     final url = (await _cache.load(sound)).path;
-    await player.setUrl(url);
-    await player.setReleaseMode(ReleaseMode.STOP);
+    await player.setSourceUrl(url);
+    await player.setReleaseMode(ReleaseMode.stop);
     return player;
   }
 }

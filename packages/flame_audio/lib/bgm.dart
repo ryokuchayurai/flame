@@ -56,12 +56,20 @@ class Bgm extends WidgetsBindingObserver {
   /// playing.
   Future<void> play(String filename, {double volume = 1}) async {
     final currentPlayer = audioPlayer;
-    if (currentPlayer != null && currentPlayer.state != PlayerState.STOPPED) {
+    if (currentPlayer != null && currentPlayer.state != PlayerState.stopped) {
       currentPlayer.stop();
     }
 
     isPlaying = true;
-    audioPlayer = await audioCache.loop(filename, volume: volume);
+    // audioPlayer = await audioCache.loop(filename, volume: volume);
+    final uri = await audioCache.load(filename);
+    audioPlayer = AudioPlayer();
+    audioPlayer?.setPlayerMode(PlayerMode.lowLatency);
+    audioPlayer?.setReleaseMode(ReleaseMode.loop);
+    await audioPlayer?.play(
+      AssetSource(uri.path),
+      volume: volume,
+    );
   }
 
   /// Stops the currently playing background music track (if any).
@@ -122,7 +130,7 @@ class Bgm extends WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      if (isPlaying && audioPlayer?.state == PlayerState.PAUSED) {
+      if (isPlaying && audioPlayer?.state == PlayerState.paused) {
         audioPlayer?.resume();
       }
     } else {

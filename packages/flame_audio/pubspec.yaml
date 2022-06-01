@@ -10,7 +10,7 @@ environment:
 dependencies:
   flame:
     path: ../flame
-  audioplayers: ^0.20.1
+  audioplayers: ^1.0.0-rc.4
   synchronized: ^3.0.0
   flutter:
     sdk: flutter
