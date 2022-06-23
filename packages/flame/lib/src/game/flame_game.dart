@@ -1,13 +1,12 @@
 import 'dart:ui';
 
+import 'package:flame/src/components/component.dart';
+import 'package:flame/src/extensions/vector2.dart';
+import 'package:flame/src/game/camera/camera.dart';
+import 'package:flame/src/game/camera/camera_wrapper.dart';
+import 'package:flame/src/game/mixins/game.dart';
+import 'package:flame/src/game/projector.dart';
 import 'package:meta/meta.dart';
-
-import '../components/component.dart';
-import '../extensions/vector2.dart';
-import 'camera/camera.dart';
-import 'camera/camera_wrapper.dart';
-import 'mixins/game.dart';
-import 'projector.dart';
 
 /// This is a more complete and opinionated implementation of [Game].
 ///
@@ -17,13 +16,16 @@ import 'projector.dart';
 /// This is the recommended base class to use for most games made with Flame.
 /// It is based on the Flame Component System (also known as FCS).
 class FlameGame extends Component with Game {
-  FlameGame({Camera? camera}) {
+  FlameGame({
+    Iterable<Component>? children,
+    Camera? camera,
+  }) : super(children: children) {
     assert(
       Component.staticGameInstance == null,
       '$this instantiated, while another game ${Component.staticGameInstance} '
       'declares itself to be a singleton',
     );
-    _cameraWrapper = CameraWrapper(camera ?? Camera(), children);
+    _cameraWrapper = CameraWrapper(camera ?? Camera(), this.children);
   }
 
   late final CameraWrapper _cameraWrapper;
@@ -118,7 +120,7 @@ class FlameGame extends Component with Game {
     var repeat = true;
     while (repeat) {
       // Give chance to other futures to execute first
-      await Future<void>.delayed(const Duration());
+      await Future<void>.delayed(Duration.zero);
       repeat = false;
       descendants(includeSelf: true).forEach(
         (Component child) {
@@ -131,8 +133,8 @@ class FlameGame extends Component with Game {
 
   /// Whether a point is within the boundaries of the visible part of the game.
   @override
-  bool containsPoint(Vector2 p) {
-    return p.x > 0 && p.y > 0 && p.x < size.x && p.y < size.y;
+  bool containsLocalPoint(Vector2 p) {
+    return p.x >= 0 && p.y >= 0 && p.x < size.x && p.y < size.y;
   }
 
   /// Returns the current time in seconds with microseconds precision.

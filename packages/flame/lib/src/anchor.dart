@@ -1,6 +1,5 @@
+import 'package:flame/src/extensions/vector2.dart';
 import 'package:meta/meta.dart';
-
-import 'extensions/vector2.dart';
 
 /// Represents a relative position inside some 2D object with a rectangular
 /// size or bounding box.
@@ -44,6 +43,7 @@ class Anchor {
 
   const Anchor(this.x, this.y);
 
+  @Deprecated('Do not use; will be removed in 1.3.0')
   Vector2 translate(Vector2 p, Vector2 size) {
     return p - (toVector2()..multiply(size));
   }
@@ -97,7 +97,7 @@ class Anchor {
   ///
   /// If you need to convert anchors to serializable data (like JSON),
   /// use the `toString()` and `valueOf` methods.
-  static Anchor valueOf(String name) {
+  factory Anchor.valueOf(String name) {
     if (_valueNames.containsValue(name)) {
       return _valueNames.entries.singleWhere((e) => e.value == name).key;
     } else {
@@ -113,7 +113,7 @@ class Anchor {
 
   @override
   bool operator ==(Object other) {
-    return other is Anchor && hashCode == other.hashCode;
+    return other is Anchor && x == other.x && y == other.y;
   }
 
   @override

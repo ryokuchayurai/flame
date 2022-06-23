@@ -2,10 +2,10 @@ import 'dart:math' show min, max;
 import 'dart:math' as math;
 import 'dart:ui';
 
-import '../../geometry.dart';
-import 'matrix4.dart';
-import 'offset.dart';
-import 'vector2.dart';
+import 'package:flame/geometry.dart';
+import 'package:flame/src/extensions/matrix4.dart';
+import 'package:flame/src/extensions/offset.dart';
+import 'package:flame/src/extensions/vector2.dart';
 
 export 'dart:ui' show Rect;
 
@@ -86,15 +86,6 @@ extension RectExtension on Rect {
     return Rect.fromPoints(Offset(minX, minY), Offset(maxX, maxY));
   }
 
-  /// Creates a [Rect] that represents the bounds of the list [pts].
-  @Deprecated(
-    'Use RectExtension.getBounds() instead. This function will be removed '
-    'in v1.2.0',
-  )
-  static Rect fromBounds(List<Vector2> pts) {
-    return getBounds(pts);
-  }
-
   /// Constructs a [Rect] with a [width] and [height] around the [center] point.
   static Rect fromCenter({
     required Vector2 center,
@@ -107,18 +98,5 @@ extension RectExtension on Rect {
       center.x + width / 2,
       center.y + height / 2,
     );
-  }
-
-  /// Constructs a [Rect] with a [width] and [height] around the [center] point.
-  @Deprecated(
-    'Use RectExtension.fromCenter() instead. This function will be removed '
-    'in v1.2.0',
-  )
-  static Rect fromVector2Center({
-    required Vector2 center,
-    required double width,
-    required double height,
-  }) {
-    return fromCenter(center: center, width: width, height: height);
   }
 }

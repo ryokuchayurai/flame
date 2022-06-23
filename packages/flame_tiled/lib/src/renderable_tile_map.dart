@@ -5,11 +5,10 @@ import 'package:collection/collection.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/sprite.dart';
+import 'package:flame_tiled/src/flame_tsx_provider.dart';
+import 'package:flame_tiled/src/simple_flips.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tiled/tiled.dart';
-
-import 'flame_tsx_provider.dart';
-import 'simple_flips.dart';
 
 /// {@template _renderable_tiled_map}
 /// This is a wrapper over Tiled's [TiledMap] with pre-computed SpriteBatches
@@ -33,15 +32,6 @@ class RenderableTiledMap {
   ) {
     refreshCache();
   }
-
-  /// Cached [SpriteBatch]es of this map.
-  @Deprecated(
-    'If you take a direct dependency on batches, use batchesByLayer instead. '
-    'This will be removed in flame_tiled v1.4.0',
-  )
-  Map<String, SpriteBatch> get batches => batchesByLayer.isNotEmpty
-      ? batchesByLayer.first
-      : <String, SpriteBatch>{};
 
   /// Changes the visibility of the corresponding layer, if different
   void setLayerVisibility(int layerId, bool visibility) {
@@ -180,13 +170,23 @@ class RenderableTiledMap {
           final src = ts.computeDrawRect(t).toRect();
           final flips = SimpleFlips.fromFlips(tile.flips);
           final size = destTileSize;
+          final scale = size.x / src.width;
+          final anchorX = src.width / 2;
+          final anchorY = src.height / 2;
+          final offsetX = ((tx + .5) * size.x) + (layerOffset.x * scale);
+          final offsetY = ((ty + .5) * size.y) + (layerOffset.y * scale);
+          final scos = flips.cos * scale;
+          final ssin = flips.sin * scale;
           if (batch != null) {
-            batch.add(
+            batch.addTransform(
               source: src,
-              offset: Vector2(tx * size.x, ty * size.y)
-                ..add(layerOffset * size.x / src.width),
-              rotation: flips.angle * math.pi / 2,
-              scale: size.x / src.width,
+              transform: RSTransform(
+                scos,
+                ssin,
+                offsetX + -scos * anchorX + ssin * anchorY,
+                offsetY + -ssin * anchorX - scos * anchorY,
+              ),
+              flip: flips.flip,
             );
           }
         }
@@ -203,19 +203,6 @@ class RenderableTiledMap {
     batchesByLayer.forEach((batchMap) {
       batchMap.forEach((_, batch) => batch.render(c, paint: kIsWeb ? _paint: null));
     });
-  }
-
-  /// This returns an object group fetch by name from a given layer.
-  /// Use this to add custom behaviour to special objects and groups.
-  @Deprecated(
-    'Use the getLayer() method instead. '
-    'This method will be removed in flame_tiled v1.4.0.',
-  )
-  ObjectGroup getObjectGroupFromLayer(String name) {
-    final g = map.layers.firstWhere((layer) {
-      return layer is ObjectGroup && layer.name == name;
-    });
-    return g as ObjectGroup;
   }
 
   /// Returns a layer of type [T] with given [name] from all the layers
