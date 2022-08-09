@@ -138,7 +138,7 @@ class RenderableTiledMap {
       map.layers.where((layer) => layer.visible).toList().map((layer) {
         switch (layer.runtimeType) {
           case TileLayer:
-            return _RenderableTileLayer.load(
+            return _RenderableAnimationTileLayer.load(
               layer as TileLayer,
               map,
               destTileSize,
@@ -330,6 +330,161 @@ class _RenderableTileLayer extends _RenderableLayer<TileLayer> {
       final src = img.source;
       if (src != null) {
         result[src] = await SpriteBatch.load(src);
+      }
+    });
+
+    return result;
+  }
+}
+
+class _RenderableAnimationTileLayer extends _RenderableLayer<TileLayer> {
+  final TiledMap _map;
+  final Vector2 _destTileSize;
+  late final _layerPaint = ui.Paint();
+  late final Set<String> _images;
+
+  _RenderableAnimationTileLayer(
+    super.layer,
+    this._map,
+    this._destTileSize,
+    this._images,
+  ) {
+    _layerPaint.color = Color.fromRGBO(255, 255, 255, layer.opacity);
+    _cacheLayerTiles();
+  }
+
+  @override
+  void refreshCache() {
+    _cacheLayerTiles();
+  }
+
+  List<Map<String, SpriteBatch>> _renderableBatchesFrames = [];
+  List<Frame> _longestAnimationFrames = [];
+  var _animationCount = 1;
+
+  @override
+  void _cacheLayerTiles() async {
+    final tileData = layer.tileData!;
+    _animationCount = 1;
+    tileData.asMap().forEach((ty, tileRow) {
+      tileRow.asMap().forEach((tx, tileGid) {
+        if (tileGid.tile == 0) {
+          return;
+        }
+        final tile = _map.tileByGid(tileGid.tile);
+        if (_animationCount < tile.animation.length) {
+          _animationCount = tile.animation.length;
+          _longestAnimationFrames = tile.animation;
+        }
+      });
+    });
+    _renderableBatchesFrames.clear();
+
+    for (var i = 0; i < _animationCount; i++) {
+      _renderableBatchesFrames.add({});
+      for (final image in _images) {
+        _renderableBatchesFrames[i][image] = await SpriteBatch.load(image);
+      }
+
+      tileData.asMap().forEach((ty, tileRow) {
+        tileRow.asMap().forEach((tx, tileGid) {
+          if (tileGid.tile == 0) {
+            return;
+          }
+          var tile = _map.tileByGid(tileGid.tile);
+          if (tile.animation.isNotEmpty) {
+            print(
+                '${tile.localId} ${tile.animation[0].tileId}  ${tile.animation[1].tileId}');
+            tile = _map.tileByGid(
+                tile.animation[i % tile.animation.length].tileId + 1);
+            print('${tile.localId}');
+          }
+
+          final tileset = _map.tilesetByTileGId(tile.localId);
+          final img = tile.image ?? tileset.image;
+          if (img != null) {
+            final batch = _renderableBatchesFrames[i][img.source];
+            final src = tileset.computeDrawRect(tile).toRect();
+            // final flips = SimpleFlips.fromFlips(tileGid.flips);
+            final size = _destTileSize;
+            final scale = size.x / src.width;
+            final anchorX = src.width / 2;
+            final anchorY = src.height / 2;
+            final offsetX = ((tx + .5) * size.x) + (layer.offsetX * scale);
+            final offsetY = ((ty + .5) * size.y) + (layer.offsetY * scale);
+            // final scos = flips.cos * scale;
+            // final ssin = flips.sin * scale;
+            if (batch != null) {
+              batch.add(
+                  source: src,
+                  offset: Vector2(offsetX - anchorX, offsetY - anchorY));
+              // batch.addTransform(
+              //   source: src,
+              //   transform: ui.RSTransform(
+              //     scos,
+              //     ssin,
+              //     offsetX + -scos * anchorX + ssin * anchorY,
+              //     offsetY + -ssin * anchorX - scos * anchorY,
+              //   ),
+              //   flip: flips.flip,
+              // );
+            }
+          }
+        });
+      });
+    }
+  }
+
+  int _prev = 0;
+  int _frame = 0;
+
+  @override
+  void render(Canvas canvas, Camera? camera) {
+    canvas.save();
+
+    if (camera != null) {
+      _applyParallaxOffset(canvas, camera, layer);
+    }
+
+    if (_animationCount > 1) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final duration = _longestAnimationFrames[_frame].duration;
+      if (now - _prev > duration) {
+        _prev = now;
+        _frame += 1;
+        if (_frame >= _animationCount) {
+          _frame = 0;
+        }
+      }
+    }
+
+    _renderableBatchesFrames[_frame].values.forEach((batch) {
+      batch.render(canvas, paint: _layerPaint);
+    });
+
+    canvas.restore();
+  }
+
+  static Future<_RenderableLayer> load(
+    TileLayer layer,
+    TiledMap map,
+    Vector2 destTileSize,
+  ) async {
+    return _RenderableAnimationTileLayer(
+      layer,
+      map,
+      destTileSize,
+      await _loadImages(map),
+    );
+  }
+
+  static Future<Set<String>> _loadImages(TiledMap map) async {
+    final result = <String>{};
+
+    await Future.forEach(map.tiledImages(), (TiledImage img) {
+      final src = img.source;
+      if (src != null) {
+        result.add(src);
       }
     });
 
